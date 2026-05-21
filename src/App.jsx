@@ -32,6 +32,12 @@ import ActivityFeed from './components/ActivityFeed'
 // TODO: T-08
 // import ActionBar from './components/ActionBar'
 
+function normaliseStatus(status) {
+  const value = String(status ?? '').trim().toLowerCase()
+  if (value === 'in progress') return 'active'
+  return value
+}
+
 export default function App() {
   const { data, loading, error } = useWorkflows()
 
@@ -49,7 +55,23 @@ export default function App() {
   //
   // T-03: Filter logic lives here but never runs because FilterBar
   // doesn't call onFilterChange. Fix FilterBar first.
-  const displayedWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
+  const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
+  const searchTerm = searchQuery.trim().toLowerCase()
+
+  const displayedWorkflows = allWorkflows.filter(workflow => {
+    const workflowStatus = normaliseStatus(workflow?.status)
+    const matchesFilter =
+      activeFilter === 'all' ? true : workflowStatus === normaliseStatus(activeFilter)
+
+    if (!matchesFilter) return false
+    if (!searchTerm) return true
+
+    const title = String(workflow?.title ?? '').toLowerCase()
+    const client = String(workflow?.client_name ?? '').toLowerCase()
+    const id = String(workflow?.id ?? '').toLowerCase()
+
+    return title.includes(searchTerm) || client.includes(searchTerm) || id.includes(searchTerm)
+  })
 
   function handleSummarise() {
     // T-09: Mock AI summary. Wire this up.
@@ -92,7 +114,7 @@ export default function App() {
         </div>
 
         <div style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
-          {data ? `${data.workflows.length} workflows loaded` : 'loading data...'}
+          {data ? `${allWorkflows.length} workflows loaded` : 'loading data...'}
         </div>
       </header>
 
