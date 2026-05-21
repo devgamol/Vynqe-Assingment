@@ -68,6 +68,9 @@ html, body, #root {
   align-items: center;
   gap: 16px;
   padding: 0 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 56px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
@@ -120,6 +123,26 @@ html, body, #root {
   max-width: 1400px;
   margin: 0 auto;
   /* Missing: flex-wrap or response breakpoint for tablets */
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+    padding: 8px 16px;
+    row-gap: 8px;
+  }
+
+  .workflow-grid-container {
+    padding: 16px;
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    margin: 0;
+  }
 }
 
 /* ─── FILTER BAR ─────────────────────────────────────────────── */
