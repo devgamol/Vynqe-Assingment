@@ -411,6 +411,54 @@ html, body, #root {
   letter-spacing: 0.3px;
 }
 
+.quick-actions-wrap {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.quick-actions-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-actions-row {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-action-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.quick-actions-more {
+  font-size: 10px;
+  color: var(--text-muted);
+  align-self: center;
+}
+
+.quick-action-feedback {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--status-active);
+}
+
 /* ─── STATUS BADGE (used in 5 places — T-07) ─────────────────── */
 /* NOTE: StatusBadge component doesn't exist yet. Status is rendered
  * inline in 5 different places with copy-pasted logic. T-07 asks

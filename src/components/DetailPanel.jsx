@@ -15,7 +15,7 @@
 //
 // Inline status colour map — copy-pasted again (T-07: extract to StatusBadge)
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import StatusBadge from './StatusBadge'
 
 function formatDateTime(ts) {
@@ -42,6 +42,7 @@ function getSafeProgress(progress) {
 }
 
 export default function DetailPanel({ workflow, users, onClose }) {
+  const [actionMessage, setActionMessage] = useState('')
   // T-05: If no workflow is selected, show the empty state.
   if (!workflow) {
     return (
@@ -64,6 +65,10 @@ export default function DetailPanel({ workflow, users, onClose }) {
   const dueDate = safeWorkflow.due_date ? formatDateTime(safeWorkflow.due_date) : '—'
   const progress = getSafeProgress(safeWorkflow.progress)
   const history = Array.isArray(safeWorkflow.history) ? [...safeWorkflow.history] : []
+  const suggestedActions = useMemo(() => {
+    const actions = Array.isArray(safeWorkflow.suggested_actions) ? safeWorkflow.suggested_actions : []
+    return [...new Set(actions.filter(action => typeof action === 'string' && action.trim()))]
+  }, [safeWorkflow.suggested_actions])
   const sortedHistory = history.sort((a, b) => {
     const aDate = typeof a?.timestamp === 'number' ? new Date(a.timestamp * 1000) : new Date(a?.timestamp)
     const bDate = typeof b?.timestamp === 'number' ? new Date(b.timestamp * 1000) : new Date(b?.timestamp)
@@ -71,6 +76,24 @@ export default function DetailPanel({ workflow, users, onClose }) {
     const bTime = Number.isNaN(bDate.getTime()) ? 0 : bDate.getTime()
     return bTime - aTime
   })
+
+  useEffect(() => {
+    if (!actionMessage) return undefined
+    const timeoutId = window.setTimeout(() => setActionMessage(''), 2200)
+    return () => window.clearTimeout(timeoutId)
+  }, [actionMessage])
+
+  function humanizeActionLabel(action) {
+    return action
+      .split('_')
+      .filter(Boolean)
+      .map(part => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
+  }
+
+  function handleQuickAction(action) {
+    setActionMessage(`Queued: ${humanizeActionLabel(action)}`)
+  }
 
   return (
     <div className="detail-panel">
@@ -146,6 +169,29 @@ export default function DetailPanel({ workflow, users, onClose }) {
             <div style={{ marginTop: '4px', color: notes === 'No notes' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
               {notes}
             </div>
+          </div>
+
+          <div>
+            <div className="muted" style={{ textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '10px' }}>Quick Actions</div>
+            {suggestedActions.length === 0 ? (
+              <div className="muted" style={{ marginTop: '4px' }}>No suggested actions</div>
+            ) : (
+              <div style={{ marginTop: '8px' }}>
+                <div className="quick-actions-row">
+                  {suggestedActions.map(action => (
+                    <button
+                      key={action}
+                      type="button"
+                      className="quick-action-btn"
+                      onClick={() => handleQuickAction(action)}
+                    >
+                      {humanizeActionLabel(action)}
+                    </button>
+                  ))}
+                </div>
+                {actionMessage && <div className="quick-action-feedback">{actionMessage}</div>}
+              </div>
+            )}
           </div>
 
           <div>

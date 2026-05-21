@@ -19,7 +19,7 @@
 //   - tags null crash (T-02): workflow.tags may be null instead of [].
 //     Calling .map() on null throws. Candidate must guard: tags ?? []
 
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import StatusBadge from './StatusBadge'
 
 function formatDate(ts) {
@@ -34,6 +34,7 @@ function formatDate(ts) {
 }
 
 export default function WorkflowCard({ workflow, isSelected, onClick }) {
+  const [actionMessage, setActionMessage] = useState('')
   const safeWorkflow = workflow ?? {}
   const assignee =
     safeWorkflow.assignee && typeof safeWorkflow.assignee === 'object' && !Array.isArray(safeWorkflow.assignee)
@@ -52,6 +53,31 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
   const notes = typeof safeWorkflow.notes === 'string' ? safeWorkflow.notes : ''
   const dueDate = safeWorkflow.due_date ?? null
   const priority = safeWorkflow.priority
+  const suggestedActions = useMemo(() => {
+    const actions = Array.isArray(safeWorkflow.suggested_actions) ? safeWorkflow.suggested_actions : []
+    return [...new Set(actions.filter(action => typeof action === 'string' && action.trim()))]
+  }, [safeWorkflow.suggested_actions])
+  const visibleActions = suggestedActions.slice(0, 3)
+  const overflowCount = Math.max(0, suggestedActions.length - visibleActions.length)
+
+  useEffect(() => {
+    if (!actionMessage) return undefined
+    const timeoutId = window.setTimeout(() => setActionMessage(''), 2200)
+    return () => window.clearTimeout(timeoutId)
+  }, [actionMessage])
+
+  function humanizeActionLabel(action) {
+    return action
+      .split('_')
+      .filter(Boolean)
+      .map(part => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
+  }
+
+  function handleQuickAction(event, action) {
+    event.stopPropagation()
+    setActionMessage(`Queued: ${humanizeActionLabel(action)}`)
+  }
 
   return (
     <div
@@ -100,6 +126,28 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
           <span key={tag} className="tag">{tag}</span>
         ))}
       </div>
+
+      {visibleActions.length > 0 && (
+        <div className="quick-actions-wrap" onClick={event => event.stopPropagation()}>
+          <div className="quick-actions-label">Quick Actions</div>
+          <div className="quick-actions-row">
+            {visibleActions.map(action => (
+              <button
+                key={action}
+                type="button"
+                className="quick-action-btn"
+                onClick={event => handleQuickAction(event, action)}
+              >
+                {humanizeActionLabel(action)}
+              </button>
+            ))}
+            {overflowCount > 0 && (
+              <span className="quick-actions-more">+{overflowCount} more</span>
+            )}
+          </div>
+          {actionMessage && <div className="quick-action-feedback">{actionMessage}</div>}
+        </div>
+      )}
 
       {/* Footer: last updated */}
       <div className="card-footer">
