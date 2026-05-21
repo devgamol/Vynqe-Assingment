@@ -22,7 +22,7 @@
 //         // import ActionBar from './components/ActionBar'
 //         // TODO: T-08 — <ActionBar workflow={selectedWorkflow} />
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useWorkflows } from './hooks/useWorkflows'
 import FilterBar from './components/FilterBar'
 import WorkflowCard from './components/WorkflowCard'
@@ -38,6 +38,7 @@ export default function App() {
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
   const [activityFeedHeight, setActivityFeedHeight] = useState(160)
   const [currentPage, setCurrentPage] = useState(1)
@@ -45,9 +46,17 @@ export default function App() {
   const [summaryModal, setSummaryModal] = useState(null)
 
   const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
-  const searchTerm = searchQuery.trim().toLowerCase()
+  const searchTerm = debouncedSearchQuery.trim().toLowerCase()
 
-  const filteredWorkflows = allWorkflows.filter(workflow => {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 280)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  const filteredWorkflows = useMemo(() => allWorkflows.filter(workflow => {
     const workflowStatus = normaliseStatus(workflow?.status)
     const matchesFilter =
       activeFilter === 'all' ? true : workflowStatus === normaliseStatus(activeFilter)
@@ -60,7 +69,7 @@ export default function App() {
     const id = String(workflow?.id ?? '').toLowerCase()
 
     return title.includes(searchTerm) || client.includes(searchTerm) || id.includes(searchTerm)
-  })
+  }), [allWorkflows, activeFilter, searchTerm])
   const WORKFLOWS_PER_PAGE = 6
   const totalPages = Math.max(1, Math.ceil(filteredWorkflows.length / WORKFLOWS_PER_PAGE))
   const safeCurrentPage = Math.min(currentPage, totalPages)
