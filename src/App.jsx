@@ -32,56 +32,6 @@ import ActivityFeed from './components/ActivityFeed'
 // TODO: T-08
 // import ActionBar from './components/ActionBar'
 
-// T-02: These hardcoded cards are what the grid renders.
-// They're here so the UI looks populated on first load.
-// Candidate's job: delete these and wire data?.workflows instead.
-const HARDCODED_CARDS = [
-  {
-    id: 'wf_001',
-    title: 'Q1 Reporting Automation',
-    client_name: 'Meridian Capital',
-    status: 'active',
-    priority: 1,
-    progress: 72,
-    assignee: { id: 'usr_aisha', name: 'Aisha Nkomo', avatar: 'AN' },
-    updated_at: '2026-01-14T16:22:00Z',
-    tags: ['finance', 'automation'],
-    notes: '',
-    history: [],
-    suggested_actions: ['send_update', 'escalate'],
-  },
-  {
-    id: 'wf_002',
-    title: 'Contract Review Pipeline',
-    client_name: 'Holloway & Pine',
-    status: 'blocked',
-    priority: 2,
-    progress: 45,
-    assignee: { id: 'usr_raj', name: 'Raj Mehta', avatar: 'RM' },
-    updated_at: '2026-01-13T09:15:00Z',
-    tags: ['legal', 'contracts'],
-    notes: 'Blocked on client signature.',
-    history: [],
-    suggested_actions: ['send_update', 'mark_blocked'],
-  },
-  {
-    id: 'wf_004',
-    title: 'Route Optimisation v2',
-    client_name: 'Thornfield Logistics',
-    status: 'review',
-    priority: 1,
-    progress: 88,
-    // BUG: assignee is null — WorkflowCard.jsx will crash on this card.
-    // This is intentional. Candidate must fix WorkflowCard to handle null.
-    assignee: null,
-    updated_at: '2026-01-15T11:00:00Z',
-    tags: ['logistics', 'optimization'],
-    notes: 'Needs peer review.',
-    history: [],
-    suggested_actions: ['request_review', 'assign_owner'],
-  },
-]
-
 export default function App() {
   const { data, loading, error } = useWorkflows()
 
@@ -99,7 +49,7 @@ export default function App() {
   //
   // T-03: Filter logic lives here but never runs because FilterBar
   // doesn't call onFilterChange. Fix FilterBar first.
-  const displayedWorkflows = HARDCODED_CARDS
+  const displayedWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
 
   function handleSummarise() {
     // T-09: Mock AI summary. Wire this up.
@@ -162,11 +112,11 @@ export default function App() {
           {/* Workflow grid */}
           <div className="workflow-grid-container">
             <div className="workflow-grid">
-              {displayedWorkflows.map(workflow => (
+              {displayedWorkflows.map((workflow, index) => (
                 <WorkflowCard
-                  key={workflow.id}
+                  key={workflow?.id ?? `workflow-${index}`}
                   workflow={workflow}
-                  isSelected={selectedWorkflow?.id === workflow.id}
+                  isSelected={selectedWorkflow?.id === workflow?.id}
                   onClick={setSelectedWorkflow}
                 />
               ))}
