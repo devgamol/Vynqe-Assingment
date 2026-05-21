@@ -172,6 +172,10 @@ html, body, #root {
     max-width: 100%;
     margin: 0;
   }
+
+  .btn-toggle-panel {
+    margin-left: 0;
+  }
 }
 
 /* ─── FILTER BAR ─────────────────────────────────────────────── */
@@ -255,6 +259,24 @@ html, body, #root {
 }
 
 .btn-summarise:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.btn-toggle-panel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.btn-toggle-panel:hover {
   color: var(--text-primary);
   border-color: var(--text-muted);
 }
@@ -456,6 +478,7 @@ html, body, #root {
   height: 8px;
   flex-shrink: 0;
   cursor: row-resize;
+  touch-action: none;
   background: linear-gradient(to bottom, transparent 0, var(--border) 50%, transparent 100%);
 }
 
