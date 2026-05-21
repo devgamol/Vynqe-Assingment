@@ -28,15 +28,10 @@ import FilterBar from './components/FilterBar'
 import WorkflowCard from './components/WorkflowCard'
 import DetailPanel from './components/DetailPanel'
 import ActivityFeed from './components/ActivityFeed'
+import StatusBadge, { normaliseStatus } from './components/StatusBadge'
 
 // TODO: T-08
 // import ActionBar from './components/ActionBar'
-
-function normaliseStatus(status) {
-  const value = String(status ?? '').trim().toLowerCase()
-  if (value === 'in progress') return 'active'
-  return value
-}
 
 export default function App() {
   const { data, loading, error } = useWorkflows()
@@ -102,24 +97,17 @@ export default function App() {
         {/* Inline status count — T-07: 5th place status logic appears */}
         <div style={{ display: 'flex', gap: '16px', marginLeft: '24px' }}>
           {['active', 'blocked', 'review'].map(s => {
-            const colours = {
-              active:  'var(--status-active)',
-              blocked: 'var(--status-blocked)',
-              review:  'var(--status-review)',
-            }
-            // Uses hardcoded cards so count is always wrong until T-02 is fixed
             const count = displayedWorkflows.filter(
-              w => w.status?.toLowerCase() === s
+              w => normaliseStatus(w?.status) === s
             ).length
             return (
-              <span
+              <StatusBadge
                 key={s}
-                className="status-label"
-                style={{ color: colours[s], fontSize: '11px' }}
-              >
-                <span className="status-dot" style={{ background: colours[s] }} />
-                {count} {s}
-              </span>
+                status={s}
+                variant="count"
+                count={count}
+                style={{ fontSize: '11px' }}
+              />
             )
           })}
         </div>
