@@ -47,37 +47,49 @@ function formatDate(ts) {
 }
 
 export default function WorkflowCard({ workflow, isSelected, onClick }) {
-  // BUG (T-02): no null guard — if assignee is null, this line throws:
-  //   TypeError: Cannot read properties of null (reading 'name')
-  // Fix: const assigneeName = workflow.assignee?.name ?? 'Unassigned'
-  const assigneeName = workflow.assignee.name
+  const safeWorkflow = workflow ?? {}
+  const assignee =
+    safeWorkflow.assignee && typeof safeWorkflow.assignee === 'object' && !Array.isArray(safeWorkflow.assignee)
+      ? safeWorkflow.assignee
+      : null
+  const assigneeName = assignee?.name || 'Unassigned'
+  const assigneeAvatar = assignee?.avatar || assigneeName.slice(0, 1).toUpperCase() || '?'
 
-  // BUG (T-02): progress may be a string ("72") or over 100 (143).
-  // This renders the bar wider than its container or with string interpolation.
-  // Fix: const progressVal = Math.min(100, Number(workflow.progress) || 0)
-  const progressVal = workflow.progress
+  const progressNum = Number(safeWorkflow.progress)
+  const hasNumericProgress = Number.isFinite(progressNum)
+  const rawProgressLabel = safeWorkflow.progress ?? '—'
+  const progressLabel = hasNumericProgress ? `${Math.round(progressNum)}%` : `${rawProgressLabel}`
+  const progressVal = hasNumericProgress ? Math.max(0, Math.min(100, progressNum)) : 0
+  const clientName = (safeWorkflow.client_name ?? '').trim() || 'Internal'
+  const tags = Array.isArray(safeWorkflow.tags) ? safeWorkflow.tags : []
+  const notes = typeof safeWorkflow.notes === 'string' ? safeWorkflow.notes : ''
+  const dueDate = safeWorkflow.due_date ?? null
+  const priority = safeWorkflow.priority
 
-  const colour = getStatusColour(workflow.status)
+  const colour = getStatusColour(safeWorkflow.status)
 
   return (
     <div
       className={`workflow-card ${isSelected ? 'selected' : ''}`}
-      onClick={() => onClick(workflow)}
+      onClick={() => onClick(safeWorkflow)}
+      title={notes || undefined}
+      data-due-date={dueDate || undefined}
+      data-priority={priority ?? undefined}
     >
       {/* Header row: ID + status badge (copy-pasted status logic — T-07) */}
       <div className="card-header">
-        <span className="card-id">{workflow.id}</span>
+        <span className="card-id">{safeWorkflow.id ?? '—'}</span>
         {/* Inline status — T-07: this exact block is duplicated 4 more times */}
         <span className="status-label" style={{ color: colour }}>
           <span className="status-dot" style={{ background: colour }} />
-          {workflow.status ?? 'unknown'}
+          {safeWorkflow.status ?? 'unknown'}
         </span>
       </div>
 
       {/* Title + client */}
       <div>
-        <div className="card-title">{workflow.title}</div>
-        <div className="card-client">{workflow.client_name}</div>
+        <div className="card-title">{safeWorkflow.title || 'Untitled workflow'}</div>
+        <div className="card-client">{clientName}</div>
       </div>
 
       {/* Progress bar */}
@@ -93,18 +105,17 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
         <div className="card-assignee">
           <div className="avatar">
             {/* BUG: assignee.avatar also throws when assignee is null */}
-            {workflow.assignee?.avatar ?? '?'}
+            {assigneeAvatar}
           </div>
           {assigneeName}
         </div>
         <span className="muted" style={{ fontSize: '10px' }}>
-          {progressVal}%
+          {progressLabel}
         </span>
       </div>
 
-      {/* Tags — BUG: tags may be null, .map() throws */}
       <div className="tags">
-        {workflow.tags.map(tag => (
+        {tags.map(tag => (
           <span key={tag} className="tag">{tag}</span>
         ))}
       </div>
@@ -112,7 +123,7 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
       {/* Footer: last updated */}
       <div className="card-footer">
         <span className="card-updated">
-          updated {formatDate(workflow.updated_at)}
+          updated {formatDate(safeWorkflow.updated_at)}
         </span>
       </div>
     </div>
