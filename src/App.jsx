@@ -42,6 +42,7 @@ export default function App() {
   const [activityFeedHeight, setActivityFeedHeight] = useState(160)
   const [currentPage, setCurrentPage] = useState(1)
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(true)
+  const [summaryModal, setSummaryModal] = useState(null)
 
   const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
   const searchTerm = searchQuery.trim().toLowerCase()
@@ -92,10 +93,55 @@ export default function App() {
     )
   }
 
+  function parseDateValue(value) {
+    if (value === null || value === undefined || value === '') return null
+    if (typeof value === 'number') {
+      const millis = value > 1e12 ? value : value * 1000
+      const fromNumber = new Date(millis)
+      return Number.isNaN(fromNumber.getTime()) ? null : fromNumber
+    }
+    const fromString = new Date(value)
+    return Number.isNaN(fromString.getTime()) ? null : fromString
+  }
+
   function handleSummarise() {
-    // T-09: Mock AI summary. Wire this up.
-    // Candidate can use the Anthropic API, a mocked response, or anything creative.
-    alert('T-09: Build the AI summary here.')
+    const now = new Date()
+    const nowMs = now.getTime()
+
+    const metrics = allWorkflows.reduce((acc, workflow) => {
+      const status = normaliseStatus(workflow?.status)
+      const rawStatus = String(workflow?.status ?? '').trim().toLowerCase()
+      const dueDate = parseDateValue(workflow?.due_date)
+
+      if (status === 'active') acc.active += 1
+      if (status === 'blocked') acc.blocked += 1
+      if (status === 'completed') acc.completed += 1
+      if (status === 'review' || rawStatus === 'in progress') acc.reviewOrInProgress += 1
+      if (dueDate && dueDate.getTime() < nowMs && status !== 'completed') acc.overdue += 1
+
+      return acc
+    }, {
+      active: 0,
+      blocked: 0,
+      completed: 0,
+      reviewOrInProgress: 0,
+      overdue: 0,
+    })
+
+    let focusRecommendation = 'Keep momentum on active workflows and send concise progress updates.'
+    if (metrics.blocked > 0) {
+      focusRecommendation = `Prioritise unblocking ${metrics.blocked} workflow${metrics.blocked > 1 ? 's' : ''}, starting with overdue blockers.`
+    } else if (metrics.overdue > 0) {
+      focusRecommendation = `Triage ${metrics.overdue} overdue workflow${metrics.overdue > 1 ? 's' : ''} and reset owners/dates today.`
+    } else if (metrics.reviewOrInProgress > 0) {
+      focusRecommendation = `Push ${metrics.reviewOrInProgress} workflow${metrics.reviewOrInProgress > 1 ? 's' : ''} through review to protect delivery timelines.`
+    }
+
+    setSummaryModal({
+      generatedAt: now,
+      metrics,
+      focusRecommendation,
+    })
   }
 
   function handleSelectWorkflow(workflow) {
@@ -237,6 +283,70 @@ export default function App() {
 
       {/* TODO: T-08 */}
       {/* <ActionBar workflow={selectedWorkflow} /> */}
+
+      {summaryModal && (
+        <div
+          className="summary-modal-overlay"
+          role="presentation"
+          onClick={() => setSummaryModal(null)}
+        >
+          <div
+            className="summary-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Operational summary"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="summary-modal-header">
+              <div>
+                <div className="summary-modal-title">Today&apos;s Ops Summary</div>
+                <div className="summary-modal-timestamp">
+                  Generated {summaryModal.generatedAt.toLocaleString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              </div>
+              <button
+                className="summary-modal-close"
+                type="button"
+                onClick={() => setSummaryModal(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="summary-metric-grid">
+              <div className="summary-metric-card">
+                <div className="summary-metric-label">Active</div>
+                <div className="summary-metric-value">{summaryModal.metrics.active}</div>
+              </div>
+              <div className="summary-metric-card">
+                <div className="summary-metric-label">Blocked</div>
+                <div className="summary-metric-value">{summaryModal.metrics.blocked}</div>
+              </div>
+              <div className="summary-metric-card">
+                <div className="summary-metric-label">Completed</div>
+                <div className="summary-metric-value">{summaryModal.metrics.completed}</div>
+              </div>
+              <div className="summary-metric-card">
+                <div className="summary-metric-label">Review / In Progress</div>
+                <div className="summary-metric-value">{summaryModal.metrics.reviewOrInProgress}</div>
+              </div>
+              <div className="summary-metric-card">
+                <div className="summary-metric-label">Overdue</div>
+                <div className="summary-metric-value">{summaryModal.metrics.overdue}</div>
+              </div>
+            </div>
+
+            <div className="summary-focus">
+              <span className="summary-focus-label">Focus Recommendation:</span> {summaryModal.focusRecommendation}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
