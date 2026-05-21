@@ -154,6 +154,7 @@ export default function App() {
         {/* Detail panel — T-05: empty shell */}
         <DetailPanel
           workflow={selectedWorkflow}
+          users={data?.users}
           onClose={() => setSelectedWorkflow(null)}
         />
       </div>
