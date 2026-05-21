@@ -20,20 +20,7 @@
 //     Calling .map() on null throws. Candidate must guard: tags ?? []
 
 import React from 'react'
-
-// Inline status colour map — copy-pasted in 5 places.
-// T-07: extract this into a StatusBadge component.
-function getStatusColour(status) {
-  if (!status) return 'var(--status-unknown)'
-  switch (status.toLowerCase()) {
-    case 'active':      return 'var(--status-active)'
-    case 'blocked':     return 'var(--status-blocked)'
-    case 'review':      return 'var(--status-review)'
-    case 'completed':   return 'var(--status-completed)'
-    case 'in progress': return 'var(--status-active)'
-    default:            return 'var(--status-unknown)'
-  }
-}
+import StatusBadge from './StatusBadge'
 
 function formatDate(ts) {
   if (!ts) return '—'
@@ -66,8 +53,6 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
   const dueDate = safeWorkflow.due_date ?? null
   const priority = safeWorkflow.priority
 
-  const colour = getStatusColour(safeWorkflow.status)
-
   return (
     <div
       className={`workflow-card ${isSelected ? 'selected' : ''}`}
@@ -79,11 +64,7 @@ export default function WorkflowCard({ workflow, isSelected, onClick }) {
       {/* Header row: ID + status badge (copy-pasted status logic — T-07) */}
       <div className="card-header">
         <span className="card-id">{safeWorkflow.id ?? '—'}</span>
-        {/* Inline status — T-07: this exact block is duplicated 4 more times */}
-        <span className="status-label" style={{ color: colour }}>
-          <span className="status-dot" style={{ background: colour }} />
-          {safeWorkflow.status ?? 'unknown'}
-        </span>
+        <StatusBadge status={safeWorkflow.status} />
       </div>
 
       {/* Title + client */}

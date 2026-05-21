@@ -16,19 +16,7 @@
 // Inline status colour map — copy-pasted again (T-07: extract to StatusBadge)
 
 import React from 'react'
-
-// TODO (T-07): replace this with <StatusBadge status={workflow.status} />
-function getStatusColour(status) {
-  if (!status) return 'var(--status-unknown)'
-  switch (status.toLowerCase()) {
-    case 'active':      return 'var(--status-active)'
-    case 'blocked':     return 'var(--status-blocked)'
-    case 'review':      return 'var(--status-review)'
-    case 'completed':   return 'var(--status-completed)'
-    case 'in progress': return 'var(--status-active)'
-    default:            return 'var(--status-unknown)'
-  }
-}
+import StatusBadge from './StatusBadge'
 
 export default function DetailPanel({ workflow, onClose }) {
   // T-05: If no workflow is selected, show the empty state.
@@ -92,10 +80,7 @@ export default function DetailPanel({ workflow, onClose }) {
 
         {/* Inline status — T-07: this is the 3rd copy of this logic */}
         <div style={{ marginTop: '12px' }}>
-          <span className="status-label" style={{ color: getStatusColour(workflow.status) }}>
-            <span className="status-dot" style={{ background: getStatusColour(workflow.status) }} />
-            {workflow.status ?? 'unknown'}
-          </span>
+          <StatusBadge status={workflow.status} />
         </div>
       </div>
 
