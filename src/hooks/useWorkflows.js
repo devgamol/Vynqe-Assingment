@@ -9,24 +9,38 @@
 import { useState, useEffect } from 'react'
 
 export function useWorkflows() {
-  // BUG (T-04): loading starts as false — UI renders before data arrives.
-  // Should be: const [loading, setLoading] = useState(true)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
 
   useEffect(() => {
-    // BUG (T-04): no try/catch, no .catch() — network errors are swallowed.
-    // BUG (T-04b): Effect has no dependency array or changing deps — runs infinitely
-    fetch('/data.json')
-      .then(res => res.json())
-      .then(json => {
+    const controller = new AbortController()
+
+    async function loadWorkflows() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch('/data.json', { signal: controller.signal })
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`)
+        }
+
+        const json = await response.json()
         setData(json)
-        // BUG (T-04): setLoading(false) never called because loading never
-        // set to true. Candidate needs to wire the full loading lifecycle.
-      })
-    // Missing: .catch(err => setError(err))
-  })
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setError(err)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadWorkflows()
+
+    return () => controller.abort()
+  }, [])
 
   return { data, loading, error }
 }

@@ -45,10 +45,21 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 
-  // T-04: No loading or error UI. App just renders with empty/null state.
-  // Fix: add early returns here:
-  //   if (loading) return <div className="state-fullscreen">Loading...</div>
-  //   if (error)   return <div className="state-fullscreen">Error: {error.message}</div>
+  if (loading) {
+    return (
+      <div className="state-fullscreen">
+        Loading workflows...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="state-fullscreen">
+        Unable to load workflows. Please refresh or try again.
+      </div>
+    )
+  }
 
   // T-02: `data` is loaded but not used — grid uses HARDCODED_CARDS.
   // Fix: replace HARDCODED_CARDS with filtered data?.workflows
