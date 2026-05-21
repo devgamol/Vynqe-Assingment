@@ -41,6 +41,7 @@ export default function App() {
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
   const [activityFeedHeight, setActivityFeedHeight] = useState(160)
   const [currentPage, setCurrentPage] = useState(1)
+  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(true)
 
   const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
   const searchTerm = searchQuery.trim().toLowerCase()
@@ -97,24 +98,31 @@ export default function App() {
     alert('T-09: Build the AI summary here.')
   }
 
+  function handleSelectWorkflow(workflow) {
+    setSelectedWorkflow(workflow)
+    setIsDetailPanelOpen(true)
+  }
+
   function startActivityResize(event) {
     event.preventDefault()
     const startY = event.clientY
     const startHeight = activityFeedHeight
 
-    function onMouseMove(moveEvent) {
+    function onPointerMove(moveEvent) {
       const delta = startY - moveEvent.clientY
       const nextHeight = Math.max(120, Math.min(window.innerHeight * 0.55, startHeight + delta))
       setActivityFeedHeight(nextHeight)
     }
 
-    function onMouseUp() {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
+    function onPointerUp() {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
     }
 
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
   }
 
   return (
@@ -147,6 +155,12 @@ export default function App() {
         <div style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
           {data ? `${allWorkflows.length} workflows loaded` : 'loading data...'}
         </div>
+        <button
+          className="btn-toggle-panel"
+          onClick={() => setIsDetailPanelOpen(open => !open)}
+        >
+          {isDetailPanelOpen ? 'Hide details' : 'Show details'}
+        </button>
       </header>
 
       {/* Filter bar */}
@@ -170,7 +184,7 @@ export default function App() {
                   key={workflow?.id ?? `workflow-${index}`}
                   workflow={workflow}
                   isSelected={selectedWorkflow?.id === workflow?.id}
-                  onClick={setSelectedWorkflow}
+                  onClick={handleSelectWorkflow}
                 />
               ))}
             </div>
@@ -198,7 +212,7 @@ export default function App() {
           {/* Activity feed — T-06: shell only */}
           <div
             className="activity-resizer"
-            onMouseDown={startActivityResize}
+            onPointerDown={startActivityResize}
             role="separator"
             aria-orientation="horizontal"
             aria-label="Resize activity feed"
@@ -212,11 +226,13 @@ export default function App() {
         </div>
 
         {/* Detail panel — T-05: empty shell */}
-        <DetailPanel
-          workflow={selectedWorkflow}
-          users={data?.users}
-          onClose={() => setSelectedWorkflow(null)}
-        />
+        {isDetailPanelOpen && (
+          <DetailPanel
+            workflow={selectedWorkflow}
+            users={data?.users}
+            onClose={() => setSelectedWorkflow(null)}
+          />
+        )}
       </div>
 
       {/* TODO: T-08 */}
