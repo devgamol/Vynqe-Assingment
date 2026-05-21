@@ -22,29 +22,62 @@
 
 import React from 'react'
 
-export default function ActivityFeed({ activityLog, users }) {
-  // TODO (T-06): Wire the data. Right now this renders nothing.
-  // Start here:
-  //   const sorted = [...(activityLog ?? [])].sort(
-  //     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-  //   )
+function toTimestamp(value) {
+  const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value)
+  const time = date.getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function formatActivityTime(value) {
+  const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export default function ActivityFeed({ activityLog, users, workflowIds, height }) {
+  const entries = Array.isArray(activityLog) ? activityLog : []
+  const knownWorkflowIds = new Set(Array.isArray(workflowIds) ? workflowIds : [])
+  const sorted = [...entries].sort((a, b) => toTimestamp(b?.timestamp) - toTimestamp(a?.timestamp))
 
   return (
-    <div className="activity-feed">
+    <div className="activity-feed" style={height ? { height: `${Math.round(height)}px` } : undefined}>
       <div className="activity-feed-header">Activity</div>
 
-      {/* TODO (T-06): map sorted entries here */}
-      {/* Each entry should look roughly like:
-          <div key={entry.id} style={{ ... }}>
-            <span style={{ color: 'var(--text-muted)' }}>{formattedTime}</span>
-            {' '}<strong>{userName}</strong>{' '}{entry.action}
-            {' '}<span style={{ color: 'var(--text-muted)' }}>{entry.workflow_id}</span>
-          </div>
-      */}
+      {sorted.length === 0 ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '8px' }}>
+          No activity available
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '8px' }}>
+          {sorted.map((entry, index) => {
+            const userId = entry?.user
+            const userName = users?.[userId]?.name || userId || 'Unknown'
+            const action = typeof entry?.action === 'string' && entry.action.trim()
+              ? entry.action
+              : 'No action provided'
+            const workflowId = entry?.workflow_id || '—'
+            const isOrphan = workflowId !== '—' && !knownWorkflowIds.has(workflowId)
+            const workflowLabel = isOrphan ? `${workflowId} (missing workflow)` : workflowId
 
-      <div style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '8px' }}>
-        T-06: Wire activity log data here. See component comments.
-      </div>
+            return (
+              <div
+                key={entry?.id ?? `${workflowId}-${entry?.timestamp ?? 'na'}-${index}`}
+                style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5 }}
+              >
+                <span style={{ color: 'var(--text-muted)' }}>{formatActivityTime(entry?.timestamp)}</span>
+                {' '}<strong style={{ color: 'var(--text-primary)' }}>{userName}</strong>{' '}{action}
+                {' '}<span style={{ color: 'var(--text-muted)' }}>{workflowLabel}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

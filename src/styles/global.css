@@ -125,6 +125,35 @@ html, body, #root {
   /* Missing: flex-wrap or response breakpoint for tablets */
 }
 
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pagination-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-indicator {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 @media (max-width: 768px) {
   .topbar {
     flex-wrap: wrap;
@@ -413,12 +442,21 @@ html, body, #root {
 
 .activity-feed {
   height: 160px;
+  min-height: 120px;
+  max-height: 55vh;
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
-  overflow-y: auto;
+  overflow: auto;
   padding: 12px 24px;
   /* TODO: T-06 — ActivityFeed component renders this container but 
    * doesn't populate it. Candidate wires the data. */
+}
+
+.activity-resizer {
+  height: 8px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: linear-gradient(to bottom, transparent 0, var(--border) 50%, transparent 100%);
 }
 
 .activity-feed-header {

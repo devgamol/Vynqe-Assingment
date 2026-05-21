@@ -22,7 +22,7 @@
 //         // import ActionBar from './components/ActionBar'
 //         // TODO: T-08 — <ActionBar workflow={selectedWorkflow} />
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useWorkflows } from './hooks/useWorkflows'
 import FilterBar from './components/FilterBar'
 import WorkflowCard from './components/WorkflowCard'
@@ -39,6 +39,41 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
+  const [activityFeedHeight, setActivityFeedHeight] = useState(160)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
+  const searchTerm = searchQuery.trim().toLowerCase()
+
+  const filteredWorkflows = allWorkflows.filter(workflow => {
+    const workflowStatus = normaliseStatus(workflow?.status)
+    const matchesFilter =
+      activeFilter === 'all' ? true : workflowStatus === normaliseStatus(activeFilter)
+
+    if (!matchesFilter) return false
+    if (!searchTerm) return true
+
+    const title = String(workflow?.title ?? '').toLowerCase()
+    const client = String(workflow?.client_name ?? '').toLowerCase()
+    const id = String(workflow?.id ?? '').toLowerCase()
+
+    return title.includes(searchTerm) || client.includes(searchTerm) || id.includes(searchTerm)
+  })
+  const WORKFLOWS_PER_PAGE = 6
+  const totalPages = Math.max(1, Math.ceil(filteredWorkflows.length / WORKFLOWS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const pageStart = (safeCurrentPage - 1) * WORKFLOWS_PER_PAGE
+  const paginatedWorkflows = filteredWorkflows.slice(pageStart, pageStart + WORKFLOWS_PER_PAGE)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, searchTerm])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   if (loading) {
     return (
@@ -56,33 +91,30 @@ export default function App() {
     )
   }
 
-  // T-02: `data` is loaded but not used — grid uses HARDCODED_CARDS.
-  // Fix: replace HARDCODED_CARDS with filtered data?.workflows
-  //
-  // T-03: Filter logic lives here but never runs because FilterBar
-  // doesn't call onFilterChange. Fix FilterBar first.
-  const allWorkflows = Array.isArray(data?.workflows) ? data.workflows : []
-  const searchTerm = searchQuery.trim().toLowerCase()
-
-  const displayedWorkflows = allWorkflows.filter(workflow => {
-    const workflowStatus = normaliseStatus(workflow?.status)
-    const matchesFilter =
-      activeFilter === 'all' ? true : workflowStatus === normaliseStatus(activeFilter)
-
-    if (!matchesFilter) return false
-    if (!searchTerm) return true
-
-    const title = String(workflow?.title ?? '').toLowerCase()
-    const client = String(workflow?.client_name ?? '').toLowerCase()
-    const id = String(workflow?.id ?? '').toLowerCase()
-
-    return title.includes(searchTerm) || client.includes(searchTerm) || id.includes(searchTerm)
-  })
-
   function handleSummarise() {
     // T-09: Mock AI summary. Wire this up.
     // Candidate can use the Anthropic API, a mocked response, or anything creative.
     alert('T-09: Build the AI summary here.')
+  }
+
+  function startActivityResize(event) {
+    event.preventDefault()
+    const startY = event.clientY
+    const startHeight = activityFeedHeight
+
+    function onMouseMove(moveEvent) {
+      const delta = startY - moveEvent.clientY
+      const nextHeight = Math.max(120, Math.min(window.innerHeight * 0.55, startHeight + delta))
+      setActivityFeedHeight(nextHeight)
+    }
+
+    function onMouseUp() {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
   }
 
   return (
@@ -97,7 +129,7 @@ export default function App() {
         {/* Inline status count — T-07: 5th place status logic appears */}
         <div style={{ display: 'flex', gap: '16px', marginLeft: '24px' }}>
           {['active', 'blocked', 'review'].map(s => {
-            const count = displayedWorkflows.filter(
+            const count = filteredWorkflows.filter(
               w => normaliseStatus(w?.status) === s
             ).length
             return (
@@ -133,7 +165,7 @@ export default function App() {
           {/* Workflow grid */}
           <div className="workflow-grid-container">
             <div className="workflow-grid">
-              {displayedWorkflows.map((workflow, index) => (
+              {paginatedWorkflows.map((workflow, index) => (
                 <WorkflowCard
                   key={workflow?.id ?? `workflow-${index}`}
                   workflow={workflow}
@@ -142,12 +174,40 @@ export default function App() {
                 />
               ))}
             </div>
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={safeCurrentPage === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-indicator">
+                Page {safeCurrentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={safeCurrentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
           </div>
 
           {/* Activity feed — T-06: shell only */}
+          <div
+            className="activity-resizer"
+            onMouseDown={startActivityResize}
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize activity feed"
+          />
           <ActivityFeed
             activityLog={data?.activity_log}
             users={data?.users}
+            workflowIds={allWorkflows.map(w => w?.id).filter(Boolean)}
+            height={activityFeedHeight}
           />
         </div>
 
